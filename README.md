@@ -13,6 +13,7 @@ Allow selected staff to manage appointment schedules.
 Protect client information through appropriate security measures.
 Apply secure software development principles throughout the project lifecycle.
 Design a system that is maintainable longterm.
+Added an admin feature that allows special control
 
 Documentation
 
