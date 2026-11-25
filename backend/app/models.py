@@ -10,10 +10,19 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
 
+    # User role: user or admin
+    role = Column(
+        String(20),
+        nullable=False,
+        default="user",
+        server_default="user"
+    )
+
     appointments = relationship(
         "Appointment",
         back_populates="user"
     )
+
 
 class Appointment(Base):
     __tablename__ = "appointments"

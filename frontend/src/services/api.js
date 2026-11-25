@@ -138,15 +138,40 @@ export async function loginUser(email, password) {
         );
     }
 
+    // Store authentication token
     sessionStorage.setItem(
         "access_token",
         data.access_token
     );
 
-    return data;
+    try {
+        // Retrieve the logged-in user's information
+        const userResponse = await authenticatedFetch(
+            `${API_URL}/api/auth/me`
+        );
+
+        if (!userResponse.ok) {
+            throw new Error("Unable to retrieve user information.");
+        }
+
+        const user = await userResponse.json();
+
+        // Store user information, including role
+        sessionStorage.setItem(
+            "user",
+            JSON.stringify(user)
+        );
+
+        return data;
+
+    } catch (error) {
+        logoutUser();
+        throw error;
+    }
 }
 
 
 export function logoutUser() {
     sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("user");
 }

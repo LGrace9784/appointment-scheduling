@@ -5,3 +5,4 @@ python-dotenv
 pwdlib[argonb2]
 PyJWT
 python-multipart
+slowapi

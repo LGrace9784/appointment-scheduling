@@ -12,6 +12,8 @@ from ..security import (
     verify_password,
     create_access_token
 )
+from fastapi import Request
+from ..rate_limit import limiter
 
 router = APIRouter(
     prefix="/api/auth",
@@ -36,7 +38,8 @@ def register_user(
 
     new_user = User(
         email=user_data.email,
-        password_hash=hash_password(user_data.password)
+        password_hash=hash_password(user_data.password),
+        role="user"
     )
 
     try:
@@ -55,11 +58,24 @@ def register_user(
 
 
 @router.post("/login")
+@limiter.limit("5/minute")
 def login_user(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
     email = form_data.username.strip().lower()
+    if (
+    not email
+    or len(email) > 255
+    or not form_data.password
+    or len(form_data.password) > 128
+):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
 
     user = db.query(User).filter(
         User.email == email
@@ -87,3 +103,21 @@ def get_logged_in_user(
     current_user: User = Depends(get_current_user)
 ):
     return current_user
+
+def require_admin(
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required"
+        )
+
+    return current_user
+
+@router.get("/users", response_model=list[UserResponse])
+def get_all_users(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    return db.query(User).all()

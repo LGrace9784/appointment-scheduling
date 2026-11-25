@@ -51,11 +51,19 @@ def get_appointments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
     try:
-        appointments = db.query(Appointment).filter(
-        Appointment.user_id == current_user.id).order_by(
-        Appointment.appointment_date).all()
+        query = db.query(Appointment)
+
+        # Regular users can only see their own appointments.
+        # Administrators can see all appointments.
+        if current_user.role != "admin":
+            query = query.filter(
+                Appointment.user_id == current_user.id
+            )
+
+        appointments = query.order_by(
+            Appointment.appointment_date
+        ).all()
 
         return appointments
 
@@ -75,11 +83,18 @@ def update_appointment(
 ):
 
     try:
+        query = db.query(Appointment).filter(
+        Appointment.id == appointment_id
+        )
 
-        appointment = db.query(Appointment).filter(
-            Appointment.id == appointment_id,
+# Regular users can only update their own appointments.
+# Admins can update appointments belonging to anyone.
+        if current_user.role != "admin":
+            query = query.filter(
             Appointment.user_id == current_user.id
-    ).first()
+            )
+
+        appointment = query.first()
 
         if appointment is None:
             raise HTTPException(
